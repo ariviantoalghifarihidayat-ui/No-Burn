@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>No-Burn - Peringatan Dini Kebakaran TPS berbasis AI</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --primary: #f97316;
+      --primary-dark: #ea580c;
+      --teal: #00a887;
+      --navy: #0d233a;
+      --bg-app: #f4f6f9;
+      --surface: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-light: #e2e8f0;
+
+      --ok: #16a34a;
+      --warn: #d97706;
+      --danger: #ea580c;
+      --fire: #dc2626;
+
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-pill: 50px;
+
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+      --shadow-md: 0 8px 24px rgba(249, 115, 22, 0.18);
+      --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.14);
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box; margin: 0; padding: 0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: #0b1522; color: var(--text-main);
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; min-height: 100dvh; overflow-x: hidden;
+    }
+
+    .mobile-frame {
+      width: 100%; max-width: 414px; height: 100vh; height: 100dvh;
+      background-color: var(--bg-app); position: relative; overflow: hidden;
+      display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    }
+
+    .view-screen {
+      display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0;
+      z-index: 10; background: var(--bg-app); flex-direction: column; opacity: 0; transition: opacity 0.3s ease;
+    }
+    .view-screen.active { display: flex; opacity: 1; z-index: 20; }
+
+    /* SPLASH */
+    #splash-screen {
+      background: linear-gradient(180deg, #f97316 0%, #b91c1c 100%);
+      justify-content: center; align-items: center; text-align: center; color: white; padding: 40px;
+      z-index: 100 !important;
+    }
+    .logo-badge {
+      width: 110px; height: 110px; border-radius: 30px; background: rgba(255,255,255,0.18);
+      display: flex; align-items: center; justify-content: center; margin-bottom: 20px;
+      animation: float 3s ease-in-out infinite; border: 2px solid rgba(255,255,255,0.35);
+    }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .splash-title { font-size: 30px; font-weight: 800; }
+    .splash-tagline { font-size: 13px; opacity: 0.92; margin-top: 4px; max-width: 280px; line-height: 1.4; }
+    .spinner {
+      margin-top: 36px; width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%; border-top-color: white; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* LOGIN */
+    #login-screen {
+      background: linear-gradient(180deg, #fff7ed 0%, #e0f2fe 100%);
+      justify-content: center; align-items: center; padding: 24px;
+    }
+    .login-box {
+      width: 100%; max-width: 360px; background: rgba(255,255,255,0.96); backdrop-filter: blur(10px);
+      border-radius: var(--radius-xl); padding: 30px 22px; box-shadow: var(--shadow-lg); text-align: center;
+    }
+    .login-logo {
+      width: 68px; height: 68px; border-radius: 20px; margin: 0 auto 12px;
+      background: linear-gradient(135deg, #f97316, #dc2626); color: white;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-box h2 { font-size: 22px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
+    .login-box p { font-size: 12px; color: var(--text-muted); margin-bottom: 22px; }
+
+    .input-group { margin-bottom: 16px; position: relative; text-align: left; display: flex; align-items: center; }
+    .input-group i { position: absolute; left: 14px; color: #94a3b8; width: 20px; height: 20px; pointer-events: none; }
+    .form-control {
+      width: 100%; padding: 12px 14px 12px 44px; border-radius: var(--radius-md);
+      border: 1.5px solid var(--border-light); outline: none; font-size: 13px;
+      background: #f8fafc; transition: var(--transition); color: var(--text-main);
+    }
+    .form-control:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(249,115,22,0.15); }
+
+    .btn-submit {
+      width: 100%; background: linear-gradient(90deg, #f97316, #dc2626);
+      color: white; border: none; padding: 13px; border-radius: var(--radius-pill);
+      font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow-md);
+      display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px;
+    }
+    .btn-sm {
+      border: none; padding: 8px 12px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 700;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: var(--transition);
+    }
+    .btn-sm:active { transform: scale(0.97); }
+    .b-orange { background: #fff1e6; color: #c2410c; }
+    .b-red { background: #fee2e2; color: #b91c1c; }
+    .b-green { background: #dcfce7; color: #15803d; }
+    .b-blue { background: #e0f2fe; color: #0369a1; }
+    .b-gray { background: #f1f5f9; color: #475569; }
+    .b-solid { background: #0d233a; color: white; }
+
+    /* MAIN */
+    .screen-content { flex: 1; overflow-y: auto; padding-bottom: 90px; }
+    .screen-content::-webkit-scrollbar { display: none; }
+
+    .top-header-region {
+      background: linear-gradient(135deg, #ea580c 0%, #0d233a 100%);
+      padding: 34px 20px 20px 20px; border-bottom-left-radius: 26px; border-bottom-right-radius: 26px; color: white;
+    }
+    .user-profile-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .user-info { display: flex; align-items: center; gap: 12px; }
+    .avatar-img {
+      width: 44px; height: 44px; border-radius: 50%; background: #0d233a; border: 2px solid white;
+      display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 16px;
+    }
+    .user-text h2 { font-size: 17px; font-weight: 800; }
+    .user-text p { font-size: 11px; opacity: 0.9; }
+    .icon-btn-circle {
+      width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.95); border: none;
+      display: flex; align-items: center; justify-content: center; color: #0f172a; cursor: pointer; position: relative;
+    }
+    .notif-badge {
+      position: absolute; top: -3px; right: -3px; min-width: 16px; height: 16px; padding: 0 4px;
+      background: #ef4444; border-radius: 10px; border: 1.5px solid white; color: white;
+      font-size: 9px; font-weight: 800; display: none; align-items: center; justify-content: center;
+    }
+    .notif-badge.show { display: flex; }
+
+    .system-status {
+      display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.25); border-radius: var(--radius-lg); padding: 10px 14px;
+    }
+    .status-dot { width: 12px; height: 12px; border-radius: 50%; background: #22c55e; flex-shrink: 0; box-shadow: 0 0 0 4px rgba(34,197,94,0.3); }
+    .status-dot.warn { background: #facc15; box-shadow: 0 0 0 4px rgba(250,204,21,0.3); }
+    .status-dot.danger { background: #fb923c; box-shadow: 0 0 0 4px rgba(251,146,60,0.35); }
+    .status-dot.fire { background: #ef4444; box-shadow: 0 0 0 4px rgba(239,68,68,0.4); animation: pulse 0.8s infinite; }
+    @keyframes pulse { 50% { transform: scale(1.25); } }
+    .system-status b { font-size: 13px; display: block; }
+    .system-status span { font-size: 11px; opacity: 0.9; }
+
+    .main-body { padding: 18px; }
+    .tab-content { display: none; animation: fadeIn 0.25s ease-in-out; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .section-title {
+      font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 12px; margin-top: 10px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .see-all-link { font-size: 11px; color: var(--primary-dark); font-weight: 700; cursor: pointer; }
+
+    .card { background: white; border-radius: var(--radius-lg); padding: 14px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-light); margin-bottom: 14px; }
+
+    /* Info banner */
+    .info-banner {
+      background: linear-gradient(135deg, #fff7ed, #ffedd5); border: 1px solid #fed7aa;
+      border-radius: var(--radius-xl); padding: 14px 16px; margin-bottom: 18px; display: flex; gap: 12px; align-items: center;
+    }
+    .info-banner .big { font-size: 30px; font-weight: 800; color: #c2410c; line-height: 1; }
+    .info-banner p { font-size: 11px; color: #7c2d12; line-height: 1.45; }
+
+    /* Stats grid */
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .stat-card { border-radius: var(--radius-lg); padding: 14px; display: flex; flex-direction: column; gap: 4px; border: 1px solid rgba(0,0,0,0.03); }
+    .stat-card .ic { width: 34px; height: 34px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: center; margin-bottom: 4px; }
+    .stat-card .val { font-size: 20px; font-weight: 800; color: #0f172a; }
+    .stat-card .lbl { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+    .s-teal { background: #e6f7f5; } .s-teal .ic { color: #00a887; }
+    .s-orange { background: #fff1e6; } .s-orange .ic { color: #ea580c; }
+    .s-red { background: #fee2e2; } .s-red .ic { color: #dc2626; }
+    .s-blue { background: #ebf3fe; } .s-blue .ic { color: #2563eb; }
+
+    /* Camera list cards */
+    .cam-row {
+      display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-md);
+      background: white; border: 1px solid var(--border-light); margin-bottom: 8px; cursor: pointer; transition: var(--transition);
+    }
+    .cam-row:hover { transform: translateX(3px); }
+    .cam-temp { width: 54px; height: 54px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; color: white; flex-shrink: 0; }
+    .cam-temp small { font-size: 8px; opacity: 0.85; font-weight: 600; }
+    .lv0 { background: #16a34a; } .lv1 { background: #d97706; } .lv2 { background: #ea580c; } .lv3 { background: #dc2626; }
+    .cam-info h4 { font-size: 12px; font-weight: 800; }
+    .cam-info p { font-size: 10px; color: var(--text-muted); }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 9px; font-weight: 800; margin-top: 3px; }
+    .pill.lv0 { background: #dcfce7; color: #15803d; } .pill.lv1 { background: #fef3c7; color: #b45309; }
+    .pill.lv2 { background: #ffedd5; color: #c2410c; } .pill.lv3 { background: #fee2e2; color: #b91c1c; }
+
+    /* Flow */
+    .flow { display: flex; flex-direction: column; gap: 8px; }
+    .flow-step { background: white; border-radius: var(--radius-md); padding: 10px 14px; border-left: 4px solid var(--primary); box-shadow: var(--shadow-sm); display: flex; gap: 10px; align-items: flex-start; }
+    .flow-step .n { width: 24px; height: 24px; border-radius: 50%; background: var(--navy); color: white; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .flow-step h4 { font-size: 12px; font-weight: 800; }
+    .flow-step p { font-size: 10.5px; color: var(--text-muted); line-height: 1.4; }
+
+    /* Thermal */
+    .thermal-wrap { position: relative; background: #000; border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 10px; }
+    #thermalCanvas { width: 100%; display: block; aspect-ratio: 4/3; }
+    .thermal-hud { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px #000; }
+    .rec { display: flex; align-items: center; gap: 5px; }
+    .rec::before { content: ''; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; animation: pulse 1s infinite; }
+    .colorbar { height: 8px; border-radius: 6px; background: linear-gradient(90deg, #000, #3b0764, #b91c1c, #f97316, #facc15, #fff); }
+    .colorbar-lbl { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin: 3px 0 10px; }
+
+    .cam-tabs { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 10px; padding-bottom: 2px; }
+    .cam-tabs::-webkit-scrollbar { display: none; }
+    .chip { padding: 7px 12px; border-radius: var(--radius-pill); font-size: 11px; font-weight: 700; white-space: nowrap; cursor: pointer; background: white; border: 1.5px solid var(--border-light); color: #475569; }
+    .chip.active { background: var(--navy); border-color: var(--navy); color: white; }
+
+    .readout-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    .readout { background: white; border: 1px solid var(--border-light); border-radius: 12px; padding: 8px; text-align: center; }
+    .readout .num { font-size: 16px; font-weight: 800; color: var(--navy); }
+    .readout .lbl { font-size: 9px; color: var(--text-muted); }
+
+    .ai-box { border-radius: var(--radius-md); padding: 12px; font-size: 12px; margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start; }
+    .ai-box.lv0 { background: #f0fdf4; color: #166534; } .ai-box.lv1 { background: #fffbeb; color: #92400e; }
+    .ai-box.lv2 { background: #fff7ed; color: #9a3412; } .ai-box.lv3 { background: #fef2f2; color: #991b1b; }
+    .ai-box b { display: block; font-size: 12px; margin-bottom: 2px; }
+    .ai-box span { font-size: 11px; line-height: 1.4; display: block; }
+
+    .sim-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+    #sparkCanvas { width: 100%; height: 70px; display: block; }
+
+    /* Alerts */
+    .alert-item { background: white; border-radius: var(--radius-md); padding: 12px; border: 1px solid var(--border-light); border-left: 5px solid var(--warn); margin-bottom: 10px; box-shadow: var(--shadow-sm); }
+    .alert-item.lv1 { border-left-color: #d97706; } .alert-item.lv2 { border-left-color: #ea580c; } .alert-item.lv3 { border-left-color: #dc2626; background: #fffafa; }
+    .alert-item.done { opacity: 0.6; border-left-color: #94a3b8; }
+    .alert-head { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+    .alert-item h4 { font-size: 12.5px; font-weight: 800; margin-bottom: 2px; }
+    .alert-item p { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+    .alert-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .empty { text-align: center; padding: 30px 10px; color: var(--text-muted); font-size: 12px; }
+
+    /* Response */
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .toggle-row h4 { font-size: 12.5px; font-weight: 800; }
+    .toggle-row p { font-size: 10.5px; color: var(--text-muted); line-height: 1.4; }
+    .switch { position: relative; width: 46px; height: 26px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; background: #cbd5e1; border-radius: 26px; cursor: pointer; transition: .25s; }
+    .slider::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: .25s; }
+    .switch input:checked + .slider { background: var(--teal); }
+    .switch input:checked + .slider::before { transform: translateX(20px); }
+
+    .select { width: 100%; padding: 10px 12px; border-radius: var(--radius-md); border: 1.5px solid var(--border-light); font-size: 12px; background: #f8fafc; margin: 8px 0 10px; outline: none; }
+    .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .action-card { border-radius: var(--radius-lg); padding: 14px; cursor: pointer; transition: var(--transition); border: 1px solid rgba(0,0,0,0.03); min-height: 108px; display: flex; flex-direction: column; justify-content: space-between; }
+    .action-card:hover { transform: translateY(-2px); }
+    .action-card:active { transform: scale(0.98); }
+    .action-card .ic { width: 34px; height: 34px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: center; }
+    .action-card h4 { font-size: 12px; font-weight: 800; margin-top: 8px; }
+    .action-card p { font-size: 10px; color: var(--text-muted); }
+    .a-blue { background: #ebf3fe; } .a-blue .ic { color: #2563eb; }
+    .a-purple { background: #f3f0ff; } .a-purple .ic { color: #7c3aed; }
+    .a-green { background: #eaf8f0; } .a-green .ic { color: #16a34a; }
+    .a-teal { background: #e6f7f5; } .a-teal .ic { color: #00a887; }
+
+    .log { font-size: 11px; display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+    .log-item { display: flex; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid #f1f5f9; }
+    .log-item time { color: var(--text-muted); font-size: 10px; flex-shrink: 0; width: 52px; }
+    .log-item.auto b { color: #7c3aed; }
+
+    /* Profile */
+    .profile-header-card { background: white; border-radius: var(--radius-lg); padding: 16px; text-align: center; box-shadow: var(--shadow-sm); margin-bottom: 14px; }
+    .menu-group { background: white; border-radius: var(--radius-lg); padding: 6px 12px; box-shadow: var(--shadow-sm); margin-bottom: 14px; }
+    .menu-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 4px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item-left { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 600; color: #334155; }
+    .menu-item-left i { width: 18px; height: 18px; color: #64748b; }
+    .thr-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: 12px; font-weight: 600; }
+    .thr-row input[type=number] { width: 70px; padding: 6px 8px; border-radius: 8px; border: 1.5px solid var(--border-light); font-size: 12px; text-align: right; }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: absolute; bottom: 0; left: 0; right: 0; height: calc(65px + env(safe-area-inset-bottom, 0px));
+      background: white; border-top: 1px solid var(--border-light); display: flex; justify-content: space-around; align-items: flex-start;
+      padding-top: 8px; padding-bottom: env(safe-area-inset-bottom, 0px); z-index: 100; box-shadow: 0 -4px 16px rgba(0,0,0,0.05);
+    }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: none; color: #94a3b8; font-size: 10px; font-weight: 700; cursor: pointer; flex: 1; }
+    .nav-item i { width: 22px; height: 22px; }
+    .nav-item.active { color: var(--primary-dark); }
+    .nav-item.center { position: relative; top: -18px; }
+    .center-circle { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #f97316, #dc2626); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(249,115,22,0.45); border: 3px solid white; }
+    .nav-item.center span { color: var(--primary-dark); margin-top: 2px; }
+
+    /* Modal + toast */
+    .modal-overlay { display: none; position: absolute; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.active { display: flex; }
+    .modal-card { background: white; border-radius: var(--radius-xl); padding: 20px; width: 100%; max-width: 340px; box-shadow: var(--shadow-lg); max-height: 80vh; overflow-y: auto; }
+
+    .toast {
+      position: absolute; top: 12px; left: 12px; right: 12px; z-index: 300; background: #7f1d1d; color: white;
+      border-radius: 16px; padding: 12px 14px; display: flex; gap: 10px; align-items: center; box-shadow: var(--shadow-lg);
+      transform: translateY(-140%); transition: transform 0.35s ease; cursor: pointer;
+    }
+    .toast.show { transform: translateY(0); }
+    .toast b { font-size: 12px; display: block; } .toast span { font-size: 11px; opacity: 0.9; }
+
+    .desktop-sidebar, .desktop-right-panel { display: none; }
+
+    /* DESKTOP */
+    @media (min-width: 1024px) {
+      .mobile-frame { max-width: 1280px; height: 92vh; max-height: 880px; border-radius: 28px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 60px rgba(0,0,0,0.5); }
+      #main-app-screen { flex-direction: row; }
+      .desktop-sidebar { display: flex; width: 230px; background: white; border-right: 1px solid var(--border-light); flex-direction: column; justify-content: space-between; padding: 24px 16px; flex-shrink: 0; z-index: 30; }
+      .brand-box { padding: 0 8px 20px 8px; border-bottom: 1px solid #f1f5f9; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+      .brand-box .login-logo { width: 42px; height: 42px; border-radius: 12px; margin: 0; flex-shrink: 0; }
+      .brand-box b { font-size: 16px; font-weight: 800; color: var(--navy); display: block; }
+      .brand-box p { font-size: 9.5px; color: var(--text-muted); font-weight: 600; line-height: 1.3; }
+      .d-menu-btn { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; color: #64748b; border: none; background: transparent; cursor: pointer; width: 100%; text-align: left; margin-bottom: 6px; transition: var(--transition); position: relative; }
+      .d-menu-btn:hover { background: #f8fafc; color: var(--text-main); }
+      .d-menu-btn.active { background: linear-gradient(90deg, #f97316, #ea580c); color: white; box-shadow: 0 4px 12px rgba(249,115,22,0.3); }
+      .d-menu-btn .cnt { margin-left: auto; background: #ef4444; color: white; font-size: 10px; border-radius: 10px; padding: 1px 7px; display: none; }
+      .d-menu-btn .cnt.show { display: inline-block; }
+      .screen-content { padding: 24px; }
+      .top-header-region { border-radius: 20px; padding: 24px 28px; margin-bottom: 8px; }
+      .top-header-region h2 { font-size: 22px; }
+      .stat-grid { grid-template-columns: repeat(4, 1fr); }
+      .action-grid { grid-template-columns: repeat(4, 1fr); }
+      .desktop-right-panel { display: flex; width: 320px; background: white; border-left: 1px solid var(--border-light); flex-direction: column; padding: 24px 20px; gap: 18px; flex-shrink: 0; overflow-y: auto; }
+      .p-card { background: #f8fafc; border-radius: 16px; padding: 16px; border: 1px solid #e2e8f0; }
+      .p-title { font-size: 13px; font-weight: 800; color: var(--navy); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+      .bottom-nav { display: none !important; }
+      .toast { left: 50%; right: auto; width: 420px; margin-left: -210px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="mobile-frame">
+
+  <div id="toast" class="toast" onclick="toastClick()">
+    <i data-lucide="siren" style="width:24px;height:24px;flex-shrink:0"></i>
+    <div><b id="toastTitle">Peringatan</b><span id="toastBody"></span></div>
+  </div>
+
+  <!-- SPLASH -->
+  <section id="splash-screen" class="view-screen active">
+    <div class="logo-badge"><i data-lucide="flame" style="width:60px;height:60px"></i></div>
+    <h1 class="splash-title">No-Burn</h1>
+    <p class="splash-tagline">Sistem Peringatan Dini Kebakaran TPS berbasis AI melalui Pencitraan Thermal Cerdas</p>
+    <div class="spinner"></div>
+  </section>
+
+  <!-- LOGIN -->
+  <section id="login-screen" class="view-screen">
+    <div class="login-box">
+      <div class="login-logo"><i data-lucide="flame" style="width:36px;height:36px"></i></div>
+      <h2>No-Burn</h2>
+      <p>Masuk sebagai operator pemantau TPS</p>
+      <form onsubmit="handleLogin(event)">
+        <div class="input-group"><i data-lucide="user"></i>
+          <input type="text" id="loginUsername" class="form-control" placeholder="Nama Operator (mis. Raka)" required /></div>
+        <div class="input-group"><i data-lucide="lock"></i>
+          <input type="password" id="loginPassword" class="form-control" placeholder="Kata Sandi" required /></div>
+        <button type="submit" class="btn-submit"><span>Masuk ke Dashboard</span><i data-lucide="arrow-right" style="width:16px;height:16px"></i></button>
+      </form>
+    </div>
+  </section>
+
+  <!-- MAIN -->
+  <section id="main-app-screen" class="view-screen">
+
+    <aside class="desktop-sidebar">
+      <div>
+        <div class="brand-box">
+          <div class="login-logo"><i data-lucide="flame" style="width:24px;height:24px"></i></div>
+          <div><b>No-Burn</b><p>Peringatan Dini Kebakaran TPS</p></div>
+        </div>
+        <button class="d-menu-btn active" data-tab="beranda" onclick="switchTab('beranda')"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+        <button class="d-menu-btn" data-tab="pantau" onclick="switchTab('pantau')"><i data-lucide="scan-eye"></i><span>Pantau Thermal</span></button>
+        <button class="d-menu-btn" data-tab="peringatan" onclick="switchTab('peringatan')"><i data-lucide="siren"></i><span>Peringatan</span><span class="cnt" id="sideCnt">0</span></button>
+        <button class="d-menu-btn" data-tab="respons" onclick="switchTab('respons')"><i data-lucide="droplets"></i><span>Respons</span></button>
+        <button class="d-menu-btn" data-tab="profil" onclick="switchTab('profil')"><i data-lucide="settings"></i><span>Pengaturan</span></button>
+      </div>
+      <div style="padding:12px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="switchTab('profil')">
+        <div class="avatar-img" style="width:32px;height:32px;font-size:13px" id="desktopSidebarAvatar">R</div>
+        <div><div style="font-size:12px;font-weight:800" id="desktopSidebarName">Operator</div><div style="font-size:10px;color:var(--text-muted)">Operator TPS</div></div>
+      </div>
+    </aside>
+
+    <div class="screen-content">
+      <div class="top-header-region">
+        <div class="user-profile-bar">
+          <div class="user-info">
+            <div class="avatar-img" id="userAvatar">R</div>
+            <div class="user-text"><h2 id="displayUserName">Halo, Operator!</h2><p>TPS Contoh • Zona A, B, C</p></div>
+          </div>
+          <button class="icon-btn-circle" onclick="switchTab('peringatan')">
+            <i data-lucide="bell" style="width:20px;height:20px"></i>
+            <span class="notif-badge" id="bellBadge">0</span>
+          </button>
+        </div>
+        <div class="system-status">
+          <div class="status-dot" id="sysDot"></div>
+          <div><b id="sysTitle">Semua Zona Normal</b><span id="sysSub">AI memantau pola suhu secara real-time</span></div>
+        </div>
+      </div>
+
+      <div class="main-body">
+
+        <!-- BERANDA -->
+        <div id="tab-beranda" class="tab-content active">
+          <div class="info-banner">
+            <div class="big">43</div>
+            <p><b>TPS legal & ilegal terbakar sepanjang 2026</b> (Kementerian Lingkungan Hidup). Pemicu utama: baterai lithium-ion, tumpukan sampah organik, dan gesekan peralatan pengolahan.</p>
+          </div>
+
+          <div class="stat-grid" id="statGrid"></div>
+
+          <div class="section-title"><span>Kamera Thermal AI</span><span class="see-all-link" onclick="switchTab('pantau')">Buka Pantauan</span></div>
+          <div id="camList"></div>
+
+          <div class="section-title"><span>Cara Kerja No-Burn</span></div>
+          <div class="flow">
+            <div class="flow-step"><div class="n">1</div><div><h4>Deteksi Thermal</h4><p>Kamera thermal memindai seluruh area TPS, bukan hanya satu titik seperti sensor asap atau gas.</p></div></div>
+            <div class="flow-step" style="border-color:#7c3aed"><div class="n">2</div><div><h4>Analisis AI</h4><p>Model AI mengenali pola suhu operasional, suhu abnormal, asap, atau api.</p></div></div>
+            <div class="flow-step" style="border-color:#0077b6"><div class="n">3</div><div><h4>Verifikasi Operator</h4><p>Operator memeriksa hasil identifikasi di dashboard sebelum bertindak.</p></div></div>
+            <div class="flow-step" style="border-color:#16a34a"><div class="n">4</div><div><h4>Respons Cepat</h4><p>Koordinasi manual, atau otomatis melalui penyemprot air, drone, dan robot pemadam.</p></div></div>
+          </div>
+        </div>
+
+        <!-- PANTAU -->
+        <div id="tab-pantau" class="tab-content">
+          <div class="section-title"><span>Pantauan Thermal Real-Time</span></div>
+          <div class="cam-tabs" id="camTabs"></div>
+
+          <div class="thermal-wrap">
+            <canvas id="thermalCanvas" width="320" height="240"></canvas>
+            <div class="thermal-hud"><span class="rec">LIVE</span><span id="hudCam">CAM-A</span></div>
+          </div>
+          <div class="colorbar"></div>
+          <div class="colorbar-lbl"><span>20°C</span><span>80°C</span><span>140°C</span><span>200°C+</span></div>
+
+          <div class="readout-grid">
+            <div class="readout"><div class="num" id="roMax">--</div><div class="lbl">Suhu Maks</div></div>
+            <div class="readout"><div class="num" id="roAvg">--</div><div class="lbl">Rata-rata</div></div>
+            <div class="readout"><div class="num" id="roConf">--</div><div class="lbl">Keyakinan AI</div></div>
+          </div>
+
+          <div class="ai-box lv0" id="aiBox"></div>
+
+          <div class="card">
+            <div style="font-size:11px;font-weight:800;margin-bottom:6px">Tren Suhu Maksimum</div>
+            <canvas id="sparkCanvas"></canvas>
+          </div>
+
+          <div class="card">
+            <div style="font-size:12px;font-weight:800;margin-bottom:2px">Simulasi Skenario (Prototipe)</div>
+            <p style="font-size:10.5px;color:var(--text-muted);margin-bottom:10px">Picu anomali pada kamera yang sedang dipilih untuk melihat alur deteksi hingga respons.</p>
+            <div class="sim-grid">
+              <button class="btn-sm b-orange" onclick="simulate('organik')"><i data-lucide="leaf" style="width:14px;height:14px"></i> Sampah organik memanas sendiri</button>
+              <button class="btn-sm b-red" onclick="simulate('li')"><i data-lucide="battery-warning" style="width:14px;height:14px"></i> Baterai lithium-ion overheat</button>
+              <button class="btn-sm b-red" onclick="simulate('api')"><i data-lucide="flame" style="width:14px;height:14px"></i> Api & asap muncul</button>
+              <button class="btn-sm b-gray" onclick="resetCam()"><i data-lucide="rotate-ccw" style="width:14px;height:14px"></i> Reset kamera ini</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PERINGATAN -->
+        <div id="tab-peringatan" class="tab-content">
+          <div class="section-title"><span>Peringatan & Verifikasi Operator</span>
+            <span class="see-all-link" onclick="clearDone()">Bersihkan selesai</span></div>
+          <div id="alertList"></div>
+        </div>
+
+        <!-- RESPONS -->
+        <div id="tab-respons" class="tab-content">
+          <div class="section-title"><span>Pusat Respons Pemadaman</span></div>
+
+          <div class="card">
+            <div class="toggle-row">
+              <div><h4>Mode Pemadaman Otomatis</h4><p>Saat level <b>API</b> terdeteksi, penyemprot air & drone aktif tanpa menunggu operator.</p></div>
+              <label class="switch"><input type="checkbox" id="autoMode" onchange="toggleAuto()" /><span class="slider"></span></label>
+            </div>
+          </div>
+
+          <label style="font-size:11px;font-weight:700;color:var(--navy)">Zona sasaran tindakan:</label>
+          <select id="targetCam" class="select"></select>
+
+          <div class="action-grid">
+            <div class="action-card a-blue" onclick="dispatch('sprinkler')"><div class="ic"><i data-lucide="droplets"></i></div><div><h4>Penyemprot Air</h4><p>Sprinkler zona sasaran</p></div></div>
+            <div class="action-card a-purple" onclick="dispatch('drone')"><div class="ic"><i data-lucide="plane"></i></div><div><h4>Drone Pemadam</h4><p>Terbang ke titik panas</p></div></div>
+            <div class="action-card a-green" onclick="dispatch('robot')"><div class="ic"><i data-lucide="bot"></i></div><div><h4>Robot Pemadam</h4><p>Mendekati sumber api</p></div></div>
+            <div class="action-card a-teal" onclick="dispatch('koordinasi')"><div class="ic"><i data-lucide="phone-call"></i></div><div><h4>Koordinasi</h4><p>Hubungi damkar & petugas</p></div></div>
+          </div>
+
+          <div class="card"><div style="font-size:12px;font-weight:800;margin-bottom:8px">Status Perangkat Pemadam</div><div id="deviceStatus"></div></div>
+
+          <div class="card"><div style="font-size:12px;font-weight:800;margin-bottom:8px">Log Aktivitas</div><div class="log" id="logBox"></div></div>
+        </div>
+
+        <!-- PROFIL -->
+        <div id="tab-profil" class="tab-content">
+          <div class="profile-header-card">
+            <div class="avatar-img" style="width:56px;height:56px;margin:0 auto 8px;font-size:22px" id="profileAvatarBig">R</div>
+            <h3 id="profileNameDisplay" style="font-size:16px;font-weight:800">Operator</h3>
+            <p style="font-size:11px;color:var(--text-muted)">Operator Pemantau TPS</p>
+          </div>
+          <div class="card">
+            <div style="font-size:12px;font-weight:800;margin-bottom:4px">Ambang Suhu Deteksi AI (°C)</div>
+            <div class="thr-row"><span>Waspada</span><input type="number" id="thrWarn" value="50" onchange="saveThr()" /></div>
+            <div class="thr-row"><span>Bahaya</span><input type="number" id="thrDanger" value="80" onchange="saveThr()" /></div>
+            <div class="thr-row"><span>Api / Nyala</span><input type="number" id="thrFire" value="150" onchange="saveThr()" /></div>
+          </div>
+          <div class="menu-group">
+            <div class="menu-item" onclick="openEditProfileModal()"><div class="menu-item-left"><i data-lucide="user-cog"></i><span>Edit Profil</span></div></div>
+            <div class="menu-item" onclick="handleLogout()"><div class="menu-item-left" style="color:#ef4444"><i data-lucide="log-out"></i><span>Keluar Aplikasi</span></div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL DESKTOP -->
+    <aside class="desktop-right-panel">
+      <div class="p-card">
+        <div class="p-title"><span>Peringatan Terbaru</span><span style="font-size:11px;color:#ea580c;cursor:pointer" onclick="switchTab('peringatan')">Lihat semua</span></div>
+        <div id="panelAlerts" style="font-size:11px;display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+      <div class="p-card">
+        <div class="p-title"><span>Status Perangkat</span></div>
+        <div id="panelDevices"></div>
+      </div>
+      <div class="p-card">
+        <div class="p-title"><span>Target Respons</span></div>
+        <p style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Waktu respons dihitung dari peringatan pertama hingga suhu kembali normal.</p>
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:800;margin-bottom:4px"><span>Insiden tertangani</span><span id="panelHandled">0</span></div>
+        <div style="width:100%;height:6px;background:#e2e8f0;border-radius:4px;overflow:hidden"><div id="panelBar" style="width:0%;height:100%;background:#00a887;transition:width .4s"></div></div>
+      </div>
+    </aside>
+
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="beranda" onclick="switchTab('beranda')"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+      <button class="nav-item" data-tab="peringatan" onclick="switchTab('peringatan')"><i data-lucide="siren"></i><span>Peringatan</span></button>
+      <button class="nav-item center" data-tab="pantau" onclick="switchTab('pantau')"><div class="center-circle"><i data-lucide="scan-eye"></i></div><span>Pantau</span></button>
+      <button class="nav-item" data-tab="respons" onclick="switchTab('respons')"><i data-lucide="droplets"></i><span>Respons</span></button>
+      <button class="nav-item" data-tab="profil" onclick="switchTab('profil')"><i data-lucide="user"></i><span>Profil</span></button>
+    </nav>
+  </section>
+
+  <!-- MODALS -->
+  <div id="generalModal" class="modal-overlay">
+    <div class="modal-card">
+      <h3 id="modalTitle" style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:8px"></h3>
+      <p id="modalBody" style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:16px;white-space:pre-line"></p>
+      <button class="btn-submit" onclick="closeModal()">Tutup</button>
+    </div>
+  </div>
+
+  <div id="editProfileModal" class="modal-overlay">
+    <div class="modal-card">
+      <h3 style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:12px">Edit Profil</h3>
+      <div class="input-group"><i data-lucide="user"></i><input type="text" id="editNameInput" class="form-control" placeholder="Nama Operator" /></div>
+      <button class="btn-submit" onclick="saveProfileChanges()">Simpan Perubahan</button>
+      <button class="btn-submit" style="background:#94a3b8;box-shadow:none;margin-top:6px" onclick="closeEditProfileModal()">Batal</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  lucide.createIcons();
+
+  /* ---------- Penyimpanan aman ---------- */
+  function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function lsSet(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+  function lsDel(k){ try { localStorage.removeItem(k); } catch(e){} }
+
+  let currentUser = lsGet('noburn_user') || null;
+
+  /* ---------- State ---------- */
+  const W = 40, H = 30;
+  const thr = { warn: 50, danger: 80, fire: 150 };
+  const LV = [
+    { name: 'NORMAL',  title: 'Suhu Operasional Normal' },
+    { name: 'WASPADA', title: 'Suhu Abnormal Terdeteksi' },
+    { name: 'BAHAYA',  title: 'Potensi Kebakaran Tinggi' },
+    { name: 'API',     title: 'Api / Asap Terdeteksi' }
+  ];
+
+  const cams = [
+    { id: 'A', name: 'Zona A • Sampah Organik', base: 33, phase: 0.0, hot: null, level: 0, alerted: 0, suppress: null, hist: [] },
+    { id: 'B', name: 'Zona B • Baterai & Elektronik', base: 31, phase: 1.7, hot: null, level: 0, alerted: 0, suppress: null, hist: [] },
+    { id: 'C', name: 'Zona C • Peralatan Pengolahan', base: 36, phase: 3.1, hot: null, level: 0, alerted: 0, suppress: null, hist: [] }
+  ];
+  cams.forEach(c => { c.max = c.base; c.avg = c.base; c.conf = 98; });
+
+  const devices = {
+    sprinkler: { name: 'Penyemprot Air', busy: false, cam: null },
+    drone:     { name: 'Drone Pemadam',  busy: false, cam: null },
+    robot:     { name: 'Robot Pemadam',  busy: false, cam: null }
+  };
+
+  let alerts = [];   // {id, cam, level, temp, conf, time, status}
+  let logs = [];
+  let alertSeq = 1;
+  let activeCam = 0;
+  let autoMode = false;
+  let handledCount = 0;
+  let toastTimer = null;
+  let toastTarget = null;
+  let tick = 0;
+
+  /* ---------- Util ---------- */
+  const $ = id => document.getElementById(id);
+  const nowStr = () => new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const camById = id => cams.find(c => c.id === id);
+
+  function addLog(text, auto) {
+    logs.unshift({ t: nowStr(), text, auto: !!auto });
+    if (logs.length > 40) logs.pop();
+    renderLog();
+  }
+
+  /* ---------- Simulasi termal ---------- */
+  function cellTemp(cam, x, y) {
+    let t = cam.base
+      + 2.2 * Math.sin(x * 0.45 + cam.phase + tick * 0.05) * Math.cos(y * 0.38 - cam.phase)
+      + (Math.random() - 0.5) * 0.9;
+    if (cam.hot) {
+      const h = cam.hot;
+      const dx = x - h.x, dy = y - h.y;
+      let g = Math.exp(-(dx * dx + dy * dy) / (2 * h.r * h.r));
+      let add = h.add * g;
+      if (h.type === 'api') add *= (0.88 + Math.random() * 0.24);
+      t += add;
+    }
+    return t;
+  }
+
+  function stepCam(cam) {
+    if (cam.hot) {
+      const h = cam.hot;
+      if (cam.suppress) {
+        h.add -= cam.suppress.rate;
+        cam.suppress.ticks--;
+        if (h.add <= 3) {
+          cam.hot = null;
+          const dev = cam.suppress.dev;
+          cam.suppress = null;
+          addLog(`Zona ${cam.id}: titik panas padam, suhu kembali normal.`, false);
+          Object.values(devices).forEach(d => { if (d.cam === cam.id) { d.busy = false; d.cam = null; } });
+          markHandled(cam.id);
+        } else if (cam.suppress.ticks <= 0) {
+          cam.suppress = null;
+        }
+      } else if (h.add < h.max) {
+        h.add = Math.min(h.max, h.add + h.rate);
+      }
+    }
+
+    let max = -1, sum = 0, mx = 0, my = 0;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const t = cellTemp(cam, x, y);
+      sum += t;
+      if (t > max) { max = t; mx = x; my = y; }
+    }
+    cam.max = max; cam.avg = sum / (W * H); cam.mx = mx; cam.my = my;
+
+    let lv = 0;
+    if (max >= thr.fire) lv = 3;
+    else if (max >= thr.danger) lv = 2;
+    else if (max >= thr.warn) lv = 1;
+    cam.level = lv;
+
+    // keyakinan AI: naik seiring selisih suhu & ukuran area
+    cam.conf = lv === 0 ? Math.round(96 + Math.random() * 3) : Math.min(99, Math.round(72 + (max - thr.warn) / 4 + Math.random() * 3));
+
+    cam.hist.push(max);
+    if (cam.hist.length > 80) cam.hist.shift();
+
+    // peringatan baru bila level naik
+    if (lv > cam.alerted) {
+      cam.alerted = lv;
+      raiseAlert(cam, lv);
+    }
+    if (lv === 0) cam.alerted = 0;
+  }
+
+  function raiseAlert(cam, lv) {
+    // tandai peringatan sebelumnya pada zona ini yang masih menunggu sebagai tereskalasi
+    alerts.forEach(a => { if (a.cam === cam.id && a.status === 'pending') a.status = 'escalated'; });
+    const a = { id: alertSeq++, cam: cam.id, level: lv, temp: cam.max, conf: cam.conf, time: nowStr(), status: 'pending' };
+    alerts.unshift(a);
+    addLog(`AI mendeteksi level ${LV[lv].name} di Zona ${cam.id} (${cam.max.toFixed(0)}°C).`, true);
+    showToast(`${LV[lv].name} • Zona ${cam.id}`, `${LV[lv].title} — ${cam.max.toFixed(0)}°C. Menunggu verifikasi operator.`, a.cam);
+    renderAlerts();
+
+    if (autoMode && lv === 3) {
+      addLog(`Mode otomatis aktif: memulai pemadaman di Zona ${cam.id}.`, true);
+      dispatch('sprinkler', cam.id, true);
+      dispatch('drone', cam.id, true);
+    }
+  }
+
+  function markHandled(camId) {
+    let any = false;
+    alerts.forEach(a => {
+      if (a.cam === camId && (a.status === 'pending' || a.status === 'confirmed' || a.status === 'escalated')) { a.status = 'handled'; any = true; }
+    });
+    if (any) { handledCount++; renderAlerts(); }
+  }
+
+  /* ---------- Warna thermal (palet iron) ---------- */
+  const STOPS = [
+    [0.00, [0, 0, 0]], [0.18, [59, 7, 100]], [0.40, [185, 28, 28]],
+    [0.62, [249, 115, 22]], [0.82, [250, 204, 21]], [1.00, [255, 255, 255]]
+  ];
+  function palette(t) {
+    let v = (t - 20) / 180; v = Math.max(0, Math.min(1, v));
+    for (let i = 1; i < STOPS.length; i++) {
+      if (v <= STOPS[i][0]) {
+        const [p0, c0] = STOPS[i - 1], [p1, c1] = STOPS[i];
+        const f = (v - p0) / (p1 - p0);
+        return [c0[0] + (c1[0] - c0[0]) * f, c0[1] + (c1[1] - c0[1]) * f, c0[2] + (c1[2] - c0[2]) * f];
+      }
+    }
+    return [255, 255, 255];
+  }
+
+  const off = document.createElement('canvas'); off.width = W; off.height = H;
+  const offCtx = off.getContext('2d');
+
+  function drawThermal() {
+    const cam = cams[activeCam];
+    const canvas = $('thermalCanvas'); if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const img = offCtx.createImageData(W, H);
+    let minX = W, minY = H, maxX = -1, maxY = -1;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const t = cellTemp(cam, x, y);
+      const c = palette(t);
+      const i = (y * W + x) * 4;
+      img.data[i] = c[0]; img.data[i + 1] = c[1]; img.data[i + 2] = c[2]; img.data[i + 3] = 255;
+      if (t >= thr.warn) { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
+    }
+    offCtx.putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
+
+    const sx = canvas.width / W, sy = canvas.height / H;
+
+    // kotak deteksi AI
+    if (maxX >= 0 && cam.level > 0) {
+      const col = ['#22c55e', '#facc15', '#fb923c', '#ef4444'][cam.level];
+      ctx.strokeStyle = col; ctx.lineWidth = 2;
+      const bx = (minX - 1) * sx, by = (minY - 1) * sy, bw = (maxX - minX + 3) * sx, bh = (maxY - minY + 3) * sy;
+      ctx.strokeRect(bx, by, bw, bh);
+      ctx.font = 'bold 11px Plus Jakarta Sans, sans-serif';
+      const label = `AI: ${LV[cam.level].name} ${cam.max.toFixed(0)}°C`;
+      const tw = ctx.measureText(label).width + 10;
+      ctx.fillStyle = col; ctx.fillRect(bx, Math.max(0, by - 18), tw, 18);
+      ctx.fillStyle = '#000'; ctx.fillText(label, bx + 5, Math.max(12, by - 5));
+    }
+    // titik terpanas
+    if (cam.mx !== undefined) {
+      const px = (cam.mx + 0.5) * sx, py = (cam.my + 0.5) * sy;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(px - 8, py); ctx.lineTo(px + 8, py); ctx.moveTo(px, py - 8); ctx.lineTo(px, py + 8); ctx.stroke();
+    }
+    // efek penyemprot air
+    if (cam.suppress) {
+      ctx.fillStyle = 'rgba(96,165,250,0.22)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#bfdbfe'; ctx.font = 'bold 11px Plus Jakarta Sans'; ctx.fillText('💧 Pemadaman berjalan...', 10, canvas.height - 10);
+    }
+  }
+
+  function drawSpark() {
+    const c = $('sparkCanvas'); if (!c) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = c.clientWidth, h = c.clientHeight;
+    if (!w) return;
+    c.width = w * dpr; c.height = h * dpr;
+    const ctx = c.getContext('2d'); ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, w, h);
+    const hist = cams[activeCam].hist; if (hist.length < 2) return;
+    const lo = 20, hi = Math.max(120, ...hist);
+    const y = v => h - 4 - ((v - lo) / (hi - lo)) * (h - 8);
+    // garis ambang
+    [[thr.warn, '#fbbf24'], [thr.danger, '#fb923c']].forEach(([v, col]) => {
+      if (v > hi) return;
+      ctx.strokeStyle = col; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, y(v)); ctx.lineTo(w, y(v)); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+    ctx.strokeStyle = '#ea580c'; ctx.lineWidth = 2; ctx.beginPath();
+    hist.forEach((v, i) => { const x = (i / 79) * w; i ? ctx.lineTo(x, y(v)) : ctx.moveTo(x, y(v)); });
+    ctx.stroke();
+  }
+
+  /* ---------- Render UI ---------- */
+  function overallLevel() { return Math.max(...cams.map(c => c.level)); }
+  function pendingCount() { return alerts.filter(a => a.status === 'pending' || a.status === 'escalated' || a.status === 'confirmed').length; }
+
+  function renderHeader() {
+    const lv = overallLevel();
+    const dot = $('sysDot');
+    dot.className = 'status-dot' + (['', ' warn', ' danger', ' fire'][lv]);
+    const worst = cams.find(c => c.level === lv);
+    $('sysTitle').textContent = lv === 0 ? 'Semua Zona Normal' : `${LV[lv].name} • Zona ${worst.id}`;
+    $('sysSub').textContent = lv === 0 ? 'AI memantau pola suhu secara real-time' : `${LV[lv].title} (${worst.max.toFixed(0)}°C)`;
+    const n = pendingCount();
+    const b = $('bellBadge'); b.textContent = n; b.classList.toggle('show', n > 0);
+    const s = $('sideCnt'); s.textContent = n; s.classList.toggle('show', n > 0);
+  }
+
+  function renderHome() {
+    const maxAll = Math.max(...cams.map(c => c.max));
+    const busy = Object.values(devices).filter(d => d.busy).length;
+    $('statGrid').innerHTML = `
+      <div class="stat-card s-teal"><div class="ic"><i data-lucide="video" style="width:18px;height:18px"></i></div><div class="val">3/3</div><div class="lbl">Kamera Thermal Aktif</div></div>
+      <div class="stat-card ${maxAll >= thr.danger ? 's-red' : 's-orange'}"><div class="ic"><i data-lucide="thermometer" style="width:18px;height:18px"></i></div><div class="val">${maxAll.toFixed(0)}°C</div><div class="lbl">Suhu Tertinggi</div></div>
+      <div class="stat-card s-red"><div class="ic"><i data-lucide="siren" style="width:18px;height:18px"></i></div><div class="val">${pendingCount()}</div><div class="lbl">Peringatan Aktif</div></div>
+      <div class="stat-card s-blue"><div class="ic"><i data-lucide="shield-check" style="width:18px;height:18px"></i></div><div class="val">${busy ? busy + ' aktif' : 'Siaga'}</div><div class="lbl">Perangkat Pemadam</div></div>`;
+    $('camList').innerHTML = cams.map((c, i) => `
+      <div class="cam-row" onclick="openCam(${i})">
+        <div class="cam-temp lv${c.level}">${c.max.toFixed(0)}°<small>CAM-${c.id}</small></div>
+        <div class="cam-info"><h4>${c.name}</h4><p>Rata-rata ${c.avg.toFixed(1)}°C • Keyakinan AI ${c.conf}%</p><span class="pill lv${c.level}">${LV[c.level].name}</span></div>
+      </div>`).join('');
+  }
+
+  function renderPantauInfo() {
+    const c = cams[activeCam];
+    $('hudCam').textContent = `CAM-${c.id} • ${c.name.split('•')[0].trim()}`;
+    $('roMax').textContent = c.max.toFixed(1) + '°';
+    $('roAvg').textContent = c.avg.toFixed(1) + '°';
+    $('roConf').textContent = c.conf + '%';
+    const desc = [
+      'Pola suhu sesuai kondisi operasional TPS. Tidak ada anomali.',
+      'Terdapat area dengan suhu di atas pola normal. Kemungkinan sampah organik memanas atau komponen overheat.',
+      'Suhu naik cepat dan terlokalisasi. Pola konsisten dengan baterai lithium-ion overheat atau pembakaran tanpa nyala.',
+      'Suhu ekstrem dengan pola nyala/asap. Segera verifikasi dan lakukan pemadaman.'
+    ];
+    const icons = ['✅', '⚠️', '🔥', '🚨'];
+    const box = $('aiBox'); box.className = 'ai-box lv' + c.level;
+    box.innerHTML = `<div style="font-size:20px">${icons[c.level]}</div><div><b>AI: ${LV[c.level].title}</b><span>${desc[c.level]}</span></div>`;
+    drawThermal(); drawSpark();
+  }
+
+  const stLabel = { pending: 'Menunggu verifikasi', confirmed: 'Terkonfirmasi', false: 'Alarm palsu', handled: 'Tertangani', escalated: 'Tereskalasi' };
+
+  function renderAlerts() {
+    const list = $('alertList');
+    if (!alerts.length) {
+      list.innerHTML = `<div class="empty">Belum ada peringatan.<br>Gunakan tab <b>Pantau</b> untuk memicu simulasi anomali.</div>`;
+    } else {
+      list.innerHTML = alerts.map(a => {
+        const open = a.status === 'pending';
+        const conf = a.status === 'confirmed';
+        const done = a.status === 'handled' || a.status === 'false' || a.status === 'escalated';
+        return `<div class="alert-item lv${a.level} ${done ? 'done' : ''}">
+          <div class="alert-head"><span>${a.time} • CAM-${a.cam}</span><span class="pill lv${a.level}">${LV[a.level].name}</span></div>
+          <h4>${LV[a.level].title} — Zona ${a.cam}</h4>
+          <p>Suhu ${a.temp.toFixed(0)}°C • Keyakinan AI ${a.conf}% • <b>${stLabel[a.status]}</b></p>
+          <div class="alert-actions">
+            <button class="btn-sm b-solid" onclick="openCamById('${a.cam}')">Lihat Thermal</button>
+            ${open ? `<button class="btn-sm b-red" onclick="verify(${a.id}, true)">✔ Konfirmasi Bahaya</button>
+                      <button class="btn-sm b-gray" onclick="verify(${a.id}, false)">✖ Alarm Palsu</button>` : ''}
+            ${(conf || open) ? `<button class="btn-sm b-blue" onclick="goRespons('${a.cam}')">Tindakan</button>` : ''}
+          </div></div>`;
+      }).join('');
+    }
+    renderPanel(); renderHeader(); lucide.createIcons();
+  }
+
+  function renderLog() {
+    const box = $('logBox'); if (!box) return;
+    box.innerHTML = logs.length ? logs.map(l => `<div class="log-item ${l.auto ? 'auto' : ''}"><time>${l.t}</time><span>${l.auto ? '<b>[Sistem]</b> ' : ''}${l.text}</span></div>`).join('')
+      : `<div class="empty" style="padding:10px">Belum ada aktivitas.</div>`;
+  }
+
+  function renderDevices() {
+    const html = Object.entries(devices).map(([k, d]) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:6px 0;border-bottom:1px solid #f1f5f9">
+        <span style="font-weight:700">${d.name}</span>
+        <span class="pill ${d.busy ? 'lv2' : 'lv0'}" style="margin:0">${d.busy ? 'Bertugas • Zona ' + d.cam : 'Siaga'}</span>
+      </div>`).join('');
+    if ($('deviceStatus')) $('deviceStatus').innerHTML = html;
+    if ($('panelDevices')) $('panelDevices').innerHTML = html;
+  }
+
+  function renderPanel() {
+    const pa = $('panelAlerts'); if (!pa) return;
+    const recent = alerts.slice(0, 4);
+    pa.innerHTML = recent.length ? recent.map(a => `<div style="padding-bottom:8px;border-bottom:1px solid #e2e8f0">
+      <strong>${LV[a.level].title} • Zona ${a.cam}</strong>
+      <div style="color:#64748b;font-size:10px;margin-top:2px">${a.time} • ${a.temp.toFixed(0)}°C • ${stLabel[a.status]}</div></div>`).join('')
+      : `<div style="color:#64748b">Belum ada peringatan.</div>`;
+    $('panelHandled').textContent = handledCount;
+    const total = Math.max(1, alerts.filter(a => a.status !== 'false').length);
+    $('panelBar').style.width = Math.min(100, (handledCount / total) * 100) + '%';
+  }
+
+  function renderTargetSelect() {
+    const sel = $('targetCam'); const cur = sel.value;
+    sel.innerHTML = cams.map(c => `<option value="${c.id}">${c.name} (${c.max.toFixed(0)}°C)</option>`).join('');
+    sel.value = cur || cams[0].id;
+  }
+
+  function renderCamTabs() {
+    $('camTabs').innerHTML = cams.map((c, i) => `<div class="chip ${i === activeCam ? 'active' : ''}" onclick="openCam(${i}, true)">CAM-${c.id} • ${c.name.split('•')[1].trim()}</div>`).join('');
+  }
+
+  /* ---------- Aksi ---------- */
+  function simulate(type) {
+    const cam = cams[activeCam];
+    const x = 8 + Math.floor(Math.random() * (W - 16)), y = 6 + Math.floor(Math.random() * (H - 12));
+    if (type === 'organik') cam.hot = { x, y, r: 6, add: 0, rate: 1.4, max: 38, type: 'organik' };
+    if (type === 'li') cam.hot = { x, y, r: 3.2, add: 0, rate: 5, max: 115, type: 'li' };
+    if (type === 'api') cam.hot = { x, y, r: 4.2, add: 0, rate: 16, max: 230, type: 'api' };
+    cam.suppress = null;
+    const names = { organik: 'sampah organik memanas', li: 'baterai lithium-ion overheat', api: 'api & asap muncul' };
+    addLog(`Simulasi: ${names[type]} di Zona ${cam.id}.`, false);
+  }
+
+  function resetCam() {
+    const cam = cams[activeCam];
+    cam.hot = null; cam.suppress = null; cam.alerted = 0;
+    Object.values(devices).forEach(d => { if (d.cam === cam.id) { d.busy = false; d.cam = null; } });
+    addLog(`Kamera Zona ${cam.id} direset.`, false);
+  }
+
+  function verify(id, real) {
+    const a = alerts.find(x => x.id === id); if (!a) return;
+    if (real) {
+      a.status = 'confirmed';
+      addLog(`Operator ${currentUser || ''} mengonfirmasi bahaya di Zona ${a.cam}.`, false);
+      goRespons(a.cam);
+    } else {
+      a.status = 'false';
+      addLog(`Operator menandai peringatan Zona ${a.cam} sebagai alarm palsu (umpan balik untuk model AI).`, false);
+      renderAlerts();
+    }
+  }
+
+  function dispatch(type, camId, auto) {
+    camId = camId || $('targetCam').value;
+    const cam = camById(camId);
+    if (type === 'koordinasi') {
+      addLog(`Koordinasi dikirim: pemadam kebakaran, supervisor TPS & warga sekitar diberi tahu untuk Zona ${camId}.`, auto);
+      if (!auto) showModal('Koordinasi Terkirim', `Notifikasi darurat untuk Zona ${camId} telah dikirim ke:\n• Dinas Pemadam Kebakaran\n• Supervisor TPS\n• Petugas lapangan`);
+      return;
+    }
+    const dev = devices[type];
+    if (dev.busy) { if (!auto) showModal('Perangkat Sibuk', `${dev.name} sedang bertugas di Zona ${dev.cam}.`); return; }
+    if (!cam.hot) { if (!auto) showModal('Tidak Ada Titik Panas', `Zona ${camId} saat ini tidak memiliki titik panas aktif.`); return; }
+    dev.busy = true; dev.cam = camId;
+    const rate = { sprinkler: 9, drone: 5, robot: 4 }[type];
+    const prev = cam.suppress ? cam.suppress.rate : 0;
+    cam.suppress = { rate: prev + rate, ticks: 60, dev: type };
+    addLog(`${dev.name} dikerahkan ke Zona ${camId}.`, auto);
+    alerts.forEach(a => { if (a.cam === camId && a.status === 'pending') a.status = 'confirmed'; });
+    renderAlerts(); renderDevices();
+  }
+
+  function toggleAuto() {
+    autoMode = $('autoMode').checked;
+    addLog(`Mode pemadaman otomatis ${autoMode ? 'DIAKTIFKAN' : 'dimatikan'}.`, false);
+  }
+
+  function clearDone() {
+    alerts = alerts.filter(a => a.status === 'pending' || a.status === 'confirmed');
+    renderAlerts();
+  }
+
+  function saveThr() {
+    const w = +$('thrWarn').value, d = +$('thrDanger').value, f = +$('thrFire').value;
+    if (!(w > 20 && d > w && f > d)) { showModal('Ambang Tidak Valid', 'Pastikan urutan: Waspada < Bahaya < Api, dan semuanya di atas 20°C.'); $('thrWarn').value = thr.warn; $('thrDanger').value = thr.danger; $('thrFire').value = thr.fire; return; }
+    thr.warn = w; thr.danger = d; thr.fire = f;
+    lsSet('noburn_thr', JSON.stringify(thr));
+  }
+
+  /* ---------- Navigasi ---------- */
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+    const t = $('tab-' + tabId); if (t) t.classList.add('active');
+    document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+    document.querySelector('.screen-content').scrollTop = 0;
+    if (tabId === 'pantau') { renderCamTabs(); renderPantauInfo(); }
+    if (tabId === 'respons') { renderTargetSelect(); renderDevices(); renderLog(); }
+    lucide.createIcons();
+  }
+  function openCam(i, stay) { activeCam = i; if (stay) { renderCamTabs(); renderPantauInfo(); } else switchTab('pantau'); }
+  function openCamById(id) { openCam(cams.findIndex(c => c.id === id)); }
+  function goRespons(id) { switchTab('respons'); $('targetCam').value = id; }
+
+  function showToast(title, body, camId) {
+    $('toastTitle').textContent = title; $('toastBody').textContent = body; toastTarget = camId;
+    const t = $('toast'); t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 5000);
+  }
+  function toastClick() { $('toast').classList.remove('show'); switchTab('peringatan'); }
+
+  /* ---------- Auth ---------- */
+  function showScreen(id) {
+    document.querySelectorAll('.view-screen').forEach(s => s.classList.remove('active'));
+    $(id).classList.add('active');
+  }
+  function handleLogin(e) {
+    e.preventDefault();
+    const u = $('loginUsername').value.trim();
+    if (u) { currentUser = u; lsSet('noburn_user', u); setupAppUser(u); showScreen('main-app-screen'); }
+  }
+  function handleLogout() { lsDel('noburn_user'); currentUser = null; showScreen('login-screen'); }
+  function setupAppUser(u) {
+    const L = u.charAt(0).toUpperCase();
+    $('displayUserName').textContent = `Halo, ${u}!`;
+    $('userAvatar').textContent = L; $('profileAvatarBig').textContent = L; $('profileNameDisplay').textContent = u;
+    $('desktopSidebarName').textContent = u; $('desktopSidebarAvatar').textContent = L;
+  }
+  function openEditProfileModal() { $('editNameInput').value = currentUser || ''; $('editProfileModal').classList.add('active'); }
+  function closeEditProfileModal() { $('editProfileModal').classList.remove('active'); }
+  function saveProfileChanges() {
+    const n = $('editNameInput').value.trim();
+    if (n) { currentUser = n; lsSet('noburn_user', n); setupAppUser(n); closeEditProfileModal(); showModal('Sukses', 'Profil berhasil diperbarui!'); }
+  }
+  function showModal(t, b) { $('modalTitle').textContent = t; $('modalBody').innerText = b; $('generalModal').classList.add('active'); }
+  function closeModal() { $('generalModal').classList.remove('active'); }
+
+  /* ---------- Loop ---------- */
+  function loop() {
+    tick++;
+    cams.forEach(stepCam);
+    renderHeader(); renderHome(); renderDevices();
+    if (tick % 4 === 0) lucide.createIcons();
+    if ($('tab-pantau').classList.contains('active')) renderPantauInfo();
+    if ($('tab-respons').classList.contains('active') && tick % 5 === 0) {
+      const sel = $('targetCam'); const cur = sel.value; renderTargetSelect(); sel.value = cur;
+    }
+    renderPanel();
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    try { const s = JSON.parse(lsGet('noburn_thr')); if (s && s.warn) { Object.assign(thr, s); $('thrWarn').value = thr.warn; $('thrDanger').value = thr.danger; $('thrFire').value = thr.fire; } } catch(e) {}
+    renderAlerts(); renderLog(); renderCamTabs(); renderTargetSelect();
+    loop(); setInterval(loop, 700);
+    setTimeout(() => {
+      $('splash-screen').classList.remove('active');
+      if (currentUser) { setupAppUser(currentUser); showScreen('main-app-screen'); } else showScreen('login-screen');
+    }, 2000);
+  });
+</script>
+</body>
+</html>
